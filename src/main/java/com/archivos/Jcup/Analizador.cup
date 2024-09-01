@@ -1,0 +1,216 @@
+package com.archivos.Jcup;
+
+import java_cup.runtime.*;
+/*import Abstracto.Instruccion;
+import AnalizadorLexico.Lexico;*/
+import com.archivos.Jflex.Lexico;
+import java.util.LinkedList;
+import java.util.HashMap;
+
+
+
+parser code
+{:
+    Lexico s;
+    parser(Lexico s){this.s = s;}
+
+    //public LinkedList<Errores> listaErrores = new LinkedList<>();
+
+    public void syntax_error(Symbol s){
+
+        //listaErrores.add(new Errores("SINTACTICO RECUPERABLE", "No se esperaba el componente "+ s.value, s.left, s.right));
+
+        System.out.println("> Error Sintactico en la linea " + (s.left) + " y columna " + (s.right) + ". No se esperaba el componente: " + (s.value) );
+    }
+
+    public void unrecovered_syntax_error (Symbol s){
+        //listaErrores.add(new Errores("SINTACTICO NO RECUPERABLE","No se esperaba el componente "+ s.value, s.left, s.right));
+
+        System.out.println("> Error Sintactico no recuperable en la linea" + (s.left) + " y columna " + (s.right) + ". No se esperaba el componente: " + (s.value) );
+
+    }
+
+:}
+
+action code
+{:
+:}
+
+terminal SUMA, RESTA, DIV, MULTI, UMENOS;
+terminal PARA, PARC, DOBP, IGUAL, COMA, CIERRE;
+terminal VAR, CONST, TYPE, TRUE , FALSE, POTENCIA, MOD, VOID, STARTWITH, DEFAULT, SUBRANGO, RANGO;
+terminal IF, WHILE, FOR, DO, RETURN, ELSE;
+terminal IGUALIGUAL, DIFIGUAL, MENORQ, MENORIGQ, MAYORQ, MAYORIGQ, PACKED, RECORD;
+terminal OR, AND, XOR, NOT, OF;
+terminal INCRE, DECRE;
+terminal LLAVEA, LLAVEC, CORA, CORC;
+terminal INT, CADENA, REAL, BOOL, CHAR, IMPRIMIR, ARRAY;
+terminal String STRING_LITERAL, ENTERO, DECIMAL,CHAR_LITERAL, ID;
+terminal String BREAK, CONTINUE;
+terminal NEW ,LIST, APPEND, PUNTO, REMOVE;
+terminal STRUC, BEGIN, END;
+terminal ROUND, LENGHT, TOSTRING, FIND;
+
+
+non terminal  ini, instrucciones, valoresvec, inicio ; //LinkedList<Instruccion>
+non terminal  casos; //LinkedList<Caso>
+non terminal Caso casodefault, caso;
+non terminal instruccion, declaracion, asignacion, asignartipos, sif, smatch, cfor;//Instruccion
+non terminal  actualizarfor;//Instruccion
+non terminal  swhile, sdowhile;//Instruccion
+non terminal  sbreak, scontinue, sreturn ;//Instruccion
+non terminal booleanos ;
+non terminal  tipo;
+non terminal  expresion; //Instruccion
+non terminal String  variables;
+non terminal  metodo; //Instruccion
+//non terminal Instruccion funcion;
+non terminal LinkedList<HashMap> params;
+non terminal HashMap<String, Object>  paramstruct, newparamstruct;
+non terminal  iniciar; //Instruccion
+non terminal paramsllamada; //LinkedList<Instruccion>
+non terminal  agregarlista, removerlista, llamadas, records, elementos; //Instruccion
+non terminal  struct;  //Instruccion
+non terminal  returnexpresion;  //Instruccion
+
+precedence left CIERRE;
+precedence left OR;
+precedence left AND;
+precedence left XOR;
+precedence right NOT;
+precedence left IGUALIGUAL, DIFIGUAL, MENORQ, MENORIGQ, MAYORQ, MAYORIGQ;
+precedence left SUMA, RESTA;
+precedence left MULTI, DIV,MOD;
+precedence nonassoc POTENCIA;
+precedence right UMENOS;
+
+
+start with ini;
+
+ini ::= instrucciones:a  ;
+
+instrucciones ::=
+   instrucciones:a instruccion:b {:System.out.println("Finalizan instrucciones");:}
+ | instruccion:a
+
+;
+
+instruccion ::= IMPRIMIR PARA expresion:a PARC CIERRE
+  |declaracion:a
+  |asignacion:a
+  |inicio:a
+  |error CIERRE
+  |error
+;
+
+
+expresion ::= RESTA expresion:a             %prec UMENOS
+            | expresion:a POTENCIA expresion:b
+            | expresion:a MOD expresion:b
+            | expresion:a SUMA expresion:b
+            | expresion:a RESTA expresion:b
+            | expresion:a MULTI expresion:b
+            | expresion:a DIV expresion:b
+            | expresion:a IGUALIGUAL expresion:b
+            | expresion:a DIFIGUAL expresion:b
+            | expresion:a MENORQ expresion:b
+            | expresion:a MENORIGQ expresion:b
+            | expresion:a MAYORQ expresion:b
+            | expresion:a MAYORIGQ expresion:b
+            | expresion:a OR expresion:b
+            | expresion:a AND expresion:b
+            | ENTERO:a
+            | DECIMAL:a
+            | STRING_LITERAL:a
+            | CHAR_LITERAL:a
+            | booleanos:a
+            | ID:a
+            | error CIERRE
+;
+
+booleanos ::=
+    TRUE:a
+   |FALSE:a
+;
+
+declaracion ::=
+    CONST {:System.out.println("CONST");:} variables:a declaracion
+   |TYPE {:System.out.println("TYPE");:} asignartipos:a declaracion
+   |VAR {:System.out.println("VAR");:} variables:a declaracion
+   |CIERRE
+   ;
+
+variables ::=
+        ID:b DOBP tipo:c IGUAL expresion:d  {:System.out.println("VAR ID " + b);:}
+       |ID:b DOBP tipo:c  {:System.out.println("VAR ID " + b);:}
+       |ID:b IGUAL expresion:c  {:System.out.println("VAR ID " + b);:}
+
+;
+
+asignacion ::=
+    ID:a IGUAL expresion:b CIERRE
+;
+
+asignartipos ::=
+   //  lista_identificadores:a IGUAL tipo:b CIERRE {:System.out.println("Type ID A " + a);:}
+   ID:a {:RESULT = a; System.out.println("1 " + a);:} COMA  asignartipos
+ | ID:a IGUAL tipo:b CIERRE {:System.out.println("2 " + a);:}  {:System.out.println("Type ID B " + a);:} asignartipos:c
+ | ID:a IGUAL tipo:b CIERRE {:System.out.println("3 " + a);:}
+   //| ID:a IGUAL tipo:b CIERRE  {:System.out.println("Type ID B " + a);:}
+   //| ID:a IGUAL tipo:b CIERRE asignartipos  {:System.out.println("Type ID A " + a);:}
+ | ID:a IGUAL expresion:b SUBRANGO expresion:c CIERRE asignartipos
+ | ID:a IGUAL expresion:b SUBRANGO expresion:c CIERRE
+ | ID:a IGUAL ARRAY CORA expresion:b RANGO expresion:c CORC OF tipo:d CIERRE asignartipos
+ | ID:a IGUAL ARRAY CORA expresion:b RANGO expresion:c CORC OF tipo:d CIERRE
+ | ID:a IGUAL RECORD records END CIERRE
+;
+
+records ::=
+    ID:a DOBP tipo:b CIERRE records
+   |ID:a DOBP tipo:b CIERRE
+   |ID:a DOBP PACKED ARRAY CORA expresion:b RANGO expresion:c CORC OF tipo:d CIERRE records
+   |ID:a DOBP PACKED ARRAY CORA expresion:b RANGO expresion:c CORC OF tipo:d CIERRE
+;
+
+inicio ::=
+    BEGIN elementos END
+;
+
+elementos::=
+    instrucciones:a {:System.out.println("Finalizan elementos");:}
+    |instrucciones:a instruccion:b {:System.out.println("Finalizan elementos");:}
+    |instruccion:a {:System.out.println("Finalizan elementos");:}
+;
+
+/*lista_identificadores ::=
+  ID:a COMA lista_identificadores {:RESULT = a; System.out.println("1 " + a);:}
+ |ID:a {:RESULT = a; System.out.println("2 "+a);:}
+;
+*/
+/*
+asignartipos ::=
+    lista_identificadores:a IGUAL tipo:b CIERRE asignartipos_opt:c
+;
+
+lista_identificadores ::=
+    ID:a
+  | lista_identificadores:b ID:a COMA
+;
+
+asignartipos_opt ::=
+ asignartipos
+;
+*/
+
+
+tipo ::=
+    INT    
+   |REAL
+   |CADENA
+   |CHAR
+   |BOOL
+   |VOID
+;
+
+
+
